@@ -7,11 +7,11 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <style>
     body {
       font-family: 'Roboto', sans-serif;
-      background-color:  #E5ECF6;
+      background-color: #E5ECF6;
     }
     .sidebar {
       height: 100vh;
@@ -25,8 +25,7 @@
       padding: 10px 20px;
       text-decoration: none;
     }
-    .sidebar a:hover,
-    .sidebar a.active {
+    .sidebar a:hover, .sidebar a.active {
       background-color: #495057;
       font-weight: bold;
     }
@@ -58,9 +57,9 @@
   <div class="row">
     <div class="col-md-2 sidebar">
       <h5 class="text-center mb-4">Operator Menu</h5>
-      <a href="#" class="active">Dashboard</a>
-      <a href="#">File</a>
-      <a href="#">Change Password</a>
+      <a href="#" class="menu-link active" data-section="dashboardSection">Dashboard</a>
+      <a href="#" class="menu-link" data-section="fileSection">File</a>
+      <a href="#" class="menu-link" data-section="passwordSection">Change Password</a>
     </div>
 
     <div class="col-md-10">
@@ -69,34 +68,73 @@
         <span id="dateDisplay"></span>
       </div>
 
-      <div class="p-4">
+      
+      <div id="dashboardSection" class="content-section p-4">
         <div class="row g-4">
           <div class="col-md-6">
             <div class="stat-card">
               <div class="stat-title">Files Uploaded</div>
-              <div class="stat-value text-primary">12</div>
+              <div class="stat-value" id="uploadedCount">0</div>
             </div>
           </div>
           <div class="col-md-6">
             <div class="stat-card">
               <div class="stat-title">Pending Approval</div>
-              <div class="stat-value text-warning">3</div>
+              <div class="stat-value text-warning" id="pendingCount">0</div>
             </div>
           </div>
           <div class="col-md-6">
             <div class="stat-card">
               <div class="stat-title">Rejected Files</div>
-              <div class="stat-value text-danger">2</div>
+              <div class="stat-value text-danger" id="rejectedCount">0</div>
             </div>
           </div>
           <div class="col-md-6">
             <div class="stat-card">
               <div class="stat-title">Approved Files</div>
-              <div class="stat-value text-success">7</div>
+              <div class="stat-value text-success" id="approvedCount">0</div>
             </div>
           </div>
         </div>
       </div>
+
+      
+      <div id="fileSection" class="content-section p-4" style="display:none;">
+        <h6>Upload File</h6>
+        <div class="mb-3">
+          <input type="file" class="form-control" id="fileInput">
+        </div>
+        <div class="mb-4 d-flex gap-2">
+          <button class="btn btn-primary" id="uploadBtn">Upload</button>
+          <button class="btn btn-secondary" id="clearBtn">Clear</button>
+        </div>
+
+        <h6>File History</h6>
+        <table class="table table-bordered table-striped">
+          <thead class="table-dark">
+            <tr>
+              <th>File Name</th>
+              <th>Upload Date</th>
+              <th>Status</th>
+              <th>Volume</th>
+              <th>Value</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="fileTable">
+            <!-- Dynamic rows appear here -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Placeholder for Change Password -->
+    <!--
+      <div id="passwordSection" class="content-section p-4" style="display:none;">
+        <div class="alert alert-info">
+          <strong>Note:</strong> Change Password functionality is not yet implemented.
+        </div>
+      </div>
+    -->
 
     </div>
   </div>
@@ -104,7 +142,70 @@
 
 <script>
   const today = new Date();
-  document.getElementById("dateDisplay").textContent = today.toDateString();
+  $("#dateDisplay").text(today.toDateString());
+
+  function updateStats() {
+    let uploaded = 0, pending = 0, approved = 0, rejected = 0;
+    $("#fileTable tr").each(function () {
+      uploaded++;
+      const statusText = $(this).find("td:eq(2)").text().trim().toLowerCase();
+      if (statusText.includes("pending")) pending++;
+      if (statusText.includes("approved")) approved++;
+      if (statusText.includes("rejected")) rejected++;
+    });
+    $("#uploadedCount").text(uploaded);
+    $("#pendingCount").text(pending);
+    $("#approvedCount").text(approved);
+    $("#rejectedCount").text(rejected);
+  }
+
+  $("#uploadBtn").click(function () {
+    const fileInput = $("#fileInput")[0];
+    if (fileInput.files.length === 0) return alert("Please select a file.");
+
+    const file = fileInput.files[0];
+    const volume = (file.size / 1024 / 1024).toFixed(1) + "MB";
+    const value = "₦" + Math.floor(Math.random() * 500000 + 50000).toLocaleString();
+    const date = today.toISOString().split('T')[0];
+
+    const newRow = `
+      <tr>
+        <td>${file.name}</td>
+        <td>${date}</td>
+        <td><span class="badge bg-warning">Pending</span></td>
+        <td>${volume}</td>
+        <td>${value}</td>
+        <td>
+          <button class="btn btn-sm btn-success downloadBtn">Download</button>
+          <button class="btn btn-sm btn-danger deleteBtn">Delete</button>
+        </td>
+      </tr>
+    `;
+    $("#fileTable").append(newRow);
+    updateStats();
+    fileInput.value = "";
+  });
+
+  $("#clearBtn").click(() => $("#fileInput").val(""));
+
+  $(document).on("click", ".deleteBtn", function () {
+    $(this).closest("tr").remove();
+    updateStats();
+  });
+
+  $(document).on("click", ".downloadBtn", function () {
+    alert("File download would be triggered here.");
+  });
+
+  $(".menu-link").click(function (e) {
+    e.preventDefault();
+    $(".menu-link").removeClass("active");
+    $(this).addClass("active");
+    $(".content-section").hide();
+    $("#" + $(this).data("section")).show();
+  });
+
+  updateStats();
 </script>
 
 </body>
